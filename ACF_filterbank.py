@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import rfifind
 from scipy.optimize import curve_fit, leastsq
-
+import filterbank_to_arr
 mm_to_in = 0.0393701
 
 """
@@ -16,18 +16,6 @@ Not working yet - first thing is to incorporate Laura's gaussian fit... Then nex
 and use pazi (copy pazi channels here) and run through scint_bw_highfreq.py
 That's the only differences I can think of so far.
 """
-
-def filterbank_to_np(filename, maskfile, total_N):
-    fil = filterbank.filterbank(filename)
-    spec=fil.get_spectra(0,total_N)
-    arr = np.array([spec[i] for i in xrange(fil.header['nchans'])])
-    t_samp = fil.header['tsamp']
-    if maskfile:
-        mask = rfifind.rfifind(maskfile)
-        maskchans = mask.mask_zap_chans
-        maskchans = fil.header['nchans']-1-np.array(list(maskchans))
-        arr[maskchans,:]=0
-    return arr, t_samp
 
 def burst_peak_width(numpy_arr, guess=[1,8000,10,0]):
     """
@@ -47,12 +35,6 @@ def burst_peak_width(numpy_arr, guess=[1,8000,10,0]):
     plt.legend()
     plt.show()
     return profile
-
-def spectra(numpy_arr,burst_cent,burst_width):
-    burst_begin = int(np.ceil(burst_cent-(burst_width/2.)))
-    burst_end = int(np.ceil(burst_cent+(burst_width/2.)))
-    spec = np.mean(numpy_arr[:,burst_begin:burst_end],axis=1)
-    return spec
 
 def shift(v, i, nchan):
         """
@@ -82,7 +64,7 @@ def scint_bw(filename,maskfile,total_N,additional_masking=False):
     #For R3, we made the narrow peak one bin wide in time to achieve the best frequency resolution. But there would need to be an
     #additional step in here to fit a Gaussian to the burst profile to determine the peak and width.
 
-    arr, t_res = filterbank_to_np(filename,maskfile,total_N)
+    arr, t_res = filterbank_to_arr.filterbank_to_np(filename,maskfile,total_N)
     if additional_masking!=False:
         arr[amask,:]=0
 
@@ -94,7 +76,7 @@ def scint_bw(filename,maskfile,total_N,additional_masking=False):
     #additional step to sum all the frequencies across the burst width required, in general. We only have one bin in time for R3.
 
     #get spectra for burst
-    spec = spectra(arr,bin_peak,6)
+    spec = filterbank_to_arr.spectra(arr,bin_peak,6)
 
     #define an off-pulse region and subtract off pulse spectrum from burst spectrum
     t_res = fil.header['tsamp']
