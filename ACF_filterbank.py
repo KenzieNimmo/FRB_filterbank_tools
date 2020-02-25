@@ -9,6 +9,7 @@ import matplotlib as mpl
 import rfifind
 from scipy.optimize import curve_fit, leastsq
 import filterbank_to_arr
+import pickle
 mm_to_in = 0.0393701
 
 """
@@ -16,25 +17,6 @@ Not working yet - first thing is to incorporate Laura's gaussian fit... Then nex
 and use pazi (copy pazi channels here) and run through scint_bw_highfreq.py
 That's the only differences I can think of so far.
 """
-
-def burst_peak_width(numpy_arr, guess=[1,8000,10,0]):
-    """
-    This doesn't work yet... don't know why... Try using Laura's script and incorporate it.
-    """
-    profile=np.sum(numpy_arr,axis=0)
-    bin_peak = np.where(profile==np.amax(profile))[0][0]
-    time = np.array(range(len(profile)))
-    profile/=np.amax(profile)
-    def gaus(x,A,x0,sx,B):
-        c=2*np.sqrt(np.log(2)*2)
-        g = A*np.exp(-((x-x0)**2/(2*(sx/c)**2)))+B
-        return g
-    popt,pcov = curve_fit(gaus,time,profile,maxfev=1400)
-    plt.plot(time, profile, 'b', label='data')
-    plt.plot(time, gaus(profile,*popt), 'r', label='fit')
-    plt.legend()
-    plt.show()
-    return profile
 
 def shift(v, i, nchan):
         """
@@ -136,44 +118,59 @@ def lorentzian_fit(ACF, delta_f, nbins_cent):
     return ACFc, delta_fc, lorentz(delta_fnew,*popt), delta_fnew, popt[0]
 
 if __name__ == '__main__':
+    
+    #open the dictionary created in fit_bursts_fb.py
+    with open('bursts_peak_width.pkl', 'rb') as f:
+        x = pickle.load(f)
+        
+    path='./'
+    IDs_ordered=['4']
+    for burst in IDs_ordered:
+        filname=bursts[burst]['fb']
+        maskname=bursts[burst]['mask']
+        filfile=os.path.join(path,filname)
+        maskfile=maskname
+        if bursts[burst]['mask']!=None:
+            maskfile=os.path.join(path,maskname)
 
-    amask = np.linspace(6000, 7200, 1200)
-    amask = [int(i) for i in amask]
-    ACF, delta_f = scint_bw('./burst4_highfreq.fil','./rfifind_rfifind.mask',16000, additonal_masking=amask)
-    reversed_arr = delta_f[::-1]
-    totdelta_f = np.append(-1*reversed_arr,delta_f[0:])
-    ACFc, deltafc, lorentz, deltafnew,bw=lorentzian_fit(ACF, delta_f,60)
+        #amask = np.linspace(6000, 7200, 1200)
+        amask = "./mask.txt"
+        amask = [int(i) for i in amask]
+        ACF, delta_f = scint_bw(filfile,maskfile,1000, additonal_masking=amask)
+        reversed_arr = delta_f[::-1]
+        totdelta_f = np.append(-1*reversed_arr,delta_f[0:])
+        ACFc, deltafc, lorentz, deltafnew,bw=lorentzian_fit(ACF, delta_f,60)
 
-    fig = plt.figure(figsize=[183*mm_to_in,100*mm_to_in])
-    grid = plt.GridSpec(2, 1, hspace=0.3, wspace=0.3)
+        fig = plt.figure(figsize=[183*mm_to_in,100*mm_to_in])
+        grid = plt.GridSpec(2, 1, hspace=0.3, wspace=0.3)
 
-    ax2 = fig.add_subplot(grid[0:1,:])
-    ax2.plot(totdelta_f,np.append(ACF[::-1],ACF[0:]), color='darkorange', drawstyle='steps-mid')
-    ax2.set_xticks([-128, -64, 0, 64, 128])
-    ax2.set_yticks([0,0.1])
-    ax2.set_yticklabels([r"$0$", r"$0.1$"])
-    ax2.set_ylim([-0.02,0.11])
+        ax2 = fig.add_subplot(grid[0:1,:])
+        ax2.plot(totdelta_f,np.append(ACF[::-1],ACF[0:]), color='darkorange', drawstyle='steps-mid')
+        ax2.set_xticks([-128, -64, 0, 64, 128])
+        ax2.set_yticks([0,0.1])
+        ax2.set_yticklabels([r"$0$", r"$0.1$"])
+        ax2.set_ylim([-0.02,0.11])
 
-    ax4 = fig.add_subplot(grid[1:,:])
-    ax4.plot(deltafc, ACFc, color='darkorange',drawstyle='steps-mid')
-    ax4.plot(deltafnew, lorentz, color='darkgreen')
-    ax4.axvline(x=bw,color='k',dashes=(5,2), lw=1.5 )
-    ax4.set_xticks([-2,-1,0,1,2])
-    ax4.set_yticks([0,0.06])
-    ax4.set_yticklabels([r"$0$", r"$0.06$"])
-    ax4.tick_params(axis='y', labelleft=True)
-    ax4.set_xlim([-2,2])
-    ax4.set_ylim([-0.035,0.073])
+        ax4 = fig.add_subplot(grid[1:,:])
+        ax4.plot(deltafc, ACFc, color='darkorange',drawstyle='steps-mid')
+        ax4.plot(deltafnew, lorentz, color='darkgreen')
+        ax4.axvline(x=bw,color='k',dashes=(5,2), lw=1.5 )
+        ax4.set_xticks([-2,-1,0,1,2])
+        ax4.set_yticks([0,0.06])
+        ax4.set_yticklabels([r"$0$", r"$0.06$"])
+        ax4.tick_params(axis='y', labelleft=True)
+        ax4.set_xlim([-2,2])
+        ax4.set_ylim([-0.035,0.073])
 
-    fig.text(0.5, 0.03, r'Frequency Lag (MHz)', ha='center')
-    fig.text(0.05, 0.5, r'Autocorrelation', va='center', rotation='vertical')
+        fig.text(0.5, 0.03, r'Frequency Lag (MHz)', ha='center')
+        fig.text(0.05, 0.5, r'Autocorrelation', va='center', rotation='vertical')
 
-    ax2.scatter(10,1200,facecolors='none', edgecolors='none',label=r'\textbf{a}')
-    ax2.legend(loc='upper left',handlelength=0, handletextpad=-0.5, bbox_to_anchor=(0.01,0.95 ),frameon=False,markerscale=0, fontsize=8)
+        ax2.scatter(10,1200,facecolors='none', edgecolors='none',label=r'\textbf{a}')
+        ax2.legend(loc='upper left',handlelength=0, handletextpad=-0.5, bbox_to_anchor=(0.01,0.95 ),frameon=False,markerscale=0, fontsize=8)
 
-    ax4.scatter(10,0.1,facecolors='none', edgecolors='none',label=r'\textbf{b}')
-    ax4.legend(loc='upper left',handlelength=0, handletextpad=-0.5, bbox_to_anchor=(0.022,0.95 ),frameon=False,markerscale=0, fontsize=8)
+        ax4.scatter(10,0.1,facecolors='none', edgecolors='none',label=r'\textbf{b}')
+        ax4.legend(loc='upper left',handlelength=0, handletextpad=-0.5, bbox_to_anchor=(0.022,0.95 ),frameon=False,markerscale=0, fontsize=8)
 
-    plt.show()
+        plt.show()
 
     print("done")
