@@ -127,6 +127,7 @@ def convert_fit(pfit, perr, stimes, freqs, tofile=False):
     fwid_e=perr[4]#*np.abs(df)
     print "Center bins: %.1f +/- %.2f , %.1f +/- %.1f fbins" % (tloc, tloc_e, floc, floc_e)
     print "Widths of fit in bins: %.2f +/- %.2f , %.1f +/- %.1f" % (twid, twid_e, fwid, fwid_e)
+    bin_time = np.array([tloc,twid])
 
     #Convert location of center of Gaussian into physical units
     tloc=stimes[0] + pfit[1]*dt
@@ -147,7 +148,7 @@ def convert_fit(pfit, perr, stimes, freqs, tofile=False):
     if tofile:
         np.savetxt(tofile, everything.transpose())
 
-    return everything, bin_center
+    return bin_time, everything, bin_center
 
 def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smudge"):
     '''
@@ -166,7 +167,7 @@ def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smu
 
     #Convert the fit from bins into physical values
     #Rows: GaussAmp, timeCenter, timeCenter_uncert, freqCenter, freqCenter_uncert, timeWidth, timeWidth_uncert, freqWidth, freqWidth_uncert, baseline
-    cpfit, bin_center=convert_fit(pfit, uncert, stimes, freqs, tofile='%s.txt'%basename)
+    bin_time, cpfit, bin_center=convert_fit(pfit, uncert, stimes, freqs, tofile='%s.txt'%basename)
 
     if doplot:
         #Plot fit on top of data
@@ -182,4 +183,4 @@ def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smu
         py.savefig(basename+'_resid.png')
         py.show()
 
-    return cpfit, bin_center
+    return bin_time, cpfit, bin_center
