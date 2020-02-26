@@ -1,7 +1,7 @@
 """
 KN 2020
 """
-
+import os
 import filterbank
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,19 +46,19 @@ def scint_bw(filename,maskfile,total_N,additional_masking=False):
     #For R3, we made the narrow peak one bin wide in time to achieve the best frequency resolution. But there would need to be an
     #additional step in here to fit a Gaussian to the burst profile to determine the peak and width.
 
-    arr, t_res = filterbank_to_arr.filterbank_to_np(filename,maskfile,total_N)
+    arr = filterbank_to_arr.filterbank_to_np(filename,maskfile,total_N)
     if additional_masking!=False:
         arr[amask,:]=0
 
     fil = filterbank.filterbank(filename)
     #inspect arr here using plt.imshow to see if you need to do additional masking
-    prof = burst_profile(arr)
+    prof = np.mean(arr,axis=0)
     bin_peak = np.where(prof==np.amax(prof))[0][0]
 
     #additional step to sum all the frequencies across the burst width required, in general. We only have one bin in time for R3.
 
     #get spectra for burst
-    spec = filterbank_to_arr.spectra(arr,bin_peak,6)
+    spec = filterbank_to_arr.burst_spectra(arr,bin_peak,6)
 
     #define an off-pulse region and subtract off pulse spectrum from burst spectrum
     t_res = fil.header['tsamp']
@@ -118,11 +118,11 @@ def lorentzian_fit(ACF, delta_f, nbins_cent):
     return ACFc, delta_fc, lorentz(delta_fnew,*popt), delta_fnew, popt[0]
 
 if __name__ == '__main__':
-    
+
     #open the dictionary created in fit_bursts_fb.py
     with open('bursts_peak_width.pkl', 'rb') as f:
-        x = pickle.load(f)
-        
+        bursts = pickle.load(f)
+
     path='./'
     IDs_ordered=['4']
     for burst in IDs_ordered:
@@ -134,9 +134,9 @@ if __name__ == '__main__':
             maskfile=os.path.join(path,maskname)
 
         #amask = np.linspace(6000, 7200, 1200)
-        amask = "./mask.txt"
+        amask = np.loadtxt("./mask.txt")
         amask = [int(i) for i in amask]
-        ACF, delta_f = scint_bw(filfile,maskfile,1000, additonal_masking=amask)
+        ACF, delta_f = scint_bw(filfile,maskfile,1000, additional_masking=amask)
         reversed_arr = delta_f[::-1]
         totdelta_f = np.append(-1*reversed_arr,delta_f[0:])
         ACFc, deltafc, lorentz, deltafnew,bw=lorentzian_fit(ACF, delta_f,60)
