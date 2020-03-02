@@ -65,7 +65,7 @@ def scint_bw(arr,mask,freqs,burst_peak,burst_width):
     good[mask]=0 #good is an array of 1 and 0 where 1 is good and 0 is bad (so we ignore the bad)
 
     ACF=autocorr(spec, nchan=nchan, v=good)
-    plt.plot(ACF, 'r', label='ACF', drawstyle='steps-mid')
+    #plt.plot(ACF, 'r', label='ACF', drawstyle='steps-mid')
 
     return ACF, delta_f
 
@@ -153,11 +153,11 @@ if __name__ == '__main__':
                 ax4.plot(deltafc, ACFc, color='darkorange',drawstyle='steps-mid')
                 ax4.plot(deltafnew, lorentz, color='darkgreen')
                 ax4.axvline(x=bw,color='k',dashes=(5,2), lw=1.5 )
-                ax4.set_xticks([-2,-1,0,1,2])
+                ax4.set_xticks([-1,0,1])
                 ax4.set_yticks([0,0.06])
                 ax4.set_yticklabels([r"$0$", r"$0.06$"])
                 ax4.tick_params(axis='y', labelleft=True)
-                ax4.set_xlim([-2,2])
+                ax4.set_xlim([-1.1,1.1])
                 ax4.set_ylim([-0.035,0.073])
                 
                 fig.text(0.5, 0.03, r'Frequency Lag (MHz)', ha='center')
