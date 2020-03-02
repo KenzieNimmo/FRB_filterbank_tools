@@ -4,7 +4,9 @@ Kenzie Nimmo 2020
 """
 import filterbank
 import numpy as np
-
+import optparse
+import sys
+import sigproc
 
 def write_header(outfbfile, header_params, header):
     """Given list of input filterbank objects and an output
@@ -18,14 +20,17 @@ def write_data(infbfiles,outfbfile):
     """Given input filterbank, a start sample and number of samples to extract
         outputs the chopped filterbank file.
     """
-    for i in range(0,testfil[0].number_of_samples):
-        data=np.zeros(testfil[0].header['nchans'])
-        for j in range(len(testfil)):
-                data+=testfil[j].read_sample()
-                data.tofile(outfbfile)
+    for i in range(0,infbfiles[0].number_of_samples):
+        #data=np.zeros(infbfiles[0].header['nchans'])
+        data=[]
+        for j in range(len(infbfiles)):
+                data.append(infbfiles[j].read_sample())
+        dat=np.array(data)
+        dat.sum(axis=0)
+        dat.tofile(outfbfile)
 
 def main():
-    infbfiles = filterbank.filterbank(options.infile)
+    infbfiles = [filterbank.filterbank(infile) for infile in options.infiles]
     #open output fb file
     outfbfile = open(options.outname, 'wb')
 
@@ -37,7 +42,6 @@ def main():
     #write data
     write_data(infbfiles, outfbfile)
     outfbfile.close()
-    infbfiles.close()
 
 if __name__=='__main__':
     parser = optparse.OptionParser(usage='%prog [options] infile', \
@@ -52,7 +56,7 @@ if __name__=='__main__':
     elif len(args)==1:
         sys.stderr.write("More than one input file must be provided!\n")
     else:
-        options.infile = args
+        options.infiles = args
 
     if options.outname is None:
         sys.stderr.write("An outname must be provided. " \
