@@ -1,6 +1,8 @@
 # FRB_filterbank_tools
 A selection of python scripts used to manipulate filterbank files in the analysis of FRB data
 
+extract.py -o output_filename -b begin_sample_number -d duration_number_of_samples input_filename: extract a filterbank file from ~input_filename~ called ~output_filename~, beginning at sample number ~begin_sample_number~ for a total number of samples ~duration_number_of_samples~.
+
 RFI_offpulse.py: is an interactive tool used to manually mask RFI in your data, and define where the burst is (so you know an offpulse region for bandpass correction).
 This outputs a pickle file (*basename*.pkl) that contains an array of the data unmasked and without bandpass correction, a copy of the mask, an array of the data masked and bandpass corrected, the sample time of your data and a list of frequencies. 
 
