@@ -9,7 +9,7 @@ import pickle
 from scipy.interpolate import interp1d as interp
 import matplotlib.pyplot as plt
 
-def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, nbins=6):
+def filterbank_to_np(filename, maskfile=None, dm=None, bandpass=False, offpulse=None, nbins=6):
     fil = filterbank.filterbank(filename)
     total_N = fil.number_of_samples
     spec=fil.get_spectra(0,total_N)
