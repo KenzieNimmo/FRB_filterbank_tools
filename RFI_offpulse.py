@@ -272,7 +272,7 @@ if __name__ == '__main__':
 
     burst = {}
     
-    burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename, dm=None, maskfile, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
+    burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename, maskfile,dm=None, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
     burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename,None,None)
     burst['mask']=mask_chans
     burst['t_samp']=fil.header['tsamp']
