@@ -184,3 +184,4 @@ def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smu
         py.show()
 
     return bin_time, cpfit, bin_center
+
