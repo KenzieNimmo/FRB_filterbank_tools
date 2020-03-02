@@ -272,8 +272,8 @@ if __name__ == '__main__':
 
     burst = {}
     
-    burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename, maskfile, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
-    burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename, None)
+    burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename, dm=None, maskfile, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
+    burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename,dm=None, maskfile=None)
     burst['mask']=mask_chans
     burst['t_samp']=fil.header['tsamp']
     burst['freqs']=fil.frequencies
