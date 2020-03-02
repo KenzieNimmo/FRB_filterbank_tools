@@ -96,3 +96,4 @@ def plot_1D_Gaussian_fit(data, popt, tres=1, xdum=None):
     py.show()
 
     return
+
