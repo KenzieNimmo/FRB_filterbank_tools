@@ -1,7 +1,8 @@
 """
 Kenzie Nimmo 2020
 """
-
+import sys
+sys.path.insert(1,'~/FRB_filterbank_tools')
 import numpy as np
 import filterbank_to_arr
 from fit_repeater_bursts import fit_my_smudge
@@ -9,12 +10,11 @@ import filterbank
 import os
 import pickle
 import matplotlib.pyplot as plt
-import sys 
 import re 
 
 if __name__ == '__main__':
     path = './'
-    IDs_ordered = ['4']
+    IDs_ordered = ['6']
     pklfilename = sys.argv[1]
     """
     pklfilename['array_corrected']
@@ -44,8 +44,8 @@ if __name__ == '__main__':
         stimes = np.linspace(0,arr.shape[1],arr.shape[1])
         stimes*=t_samp
         #guess=[dmax, xmax, ymax, xwid, ywid, 0]
-        if burst == "4":
-            guess = [50,450,4000,4,8000,0]
+        if burst == "6":
+            guess = [50,242,1408,100,2816,0]
         else: guess = []
 
         bin_times,fit, bin_center = fit_my_smudge(arr, stimes, freqs, guess=guess, doplot=True, basename=picklename)

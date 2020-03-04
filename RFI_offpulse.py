@@ -2,7 +2,8 @@
 Interactive RFI masker using the filterbank file, and outputs the masked array that can be read into other python scripts. Also does the bandpass correction using filterbank_to_arr.
 Kenzie Nimmo 2020
 """
-
+import sys
+sys.path.insert(1,'~/FRB_filterbank_tools')
 import numpy as np
 import matplotlib.pyplot as plt
 import filterbank_to_arr
@@ -13,7 +14,7 @@ import filterbank
 import pickle
 import os
 import re
-import sys
+
 
 def find_nearest(array, value):
     array = np.asarray(array)
@@ -44,7 +45,7 @@ class offpulse(object):
         ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
         ax2.tick_params(axis='x', labelbottom='off', top='off')
         y_range = profile.max() - profile.min()
-        ax2.set_ylim(profile.min()-y_range*0.1, profile.max()*1.1)
+        ax2.set_ylim(profile.min()-y_range*0.15, profile.max()*1.1)
         ax2.tick_params(labelbottom=False, labeltop=False, labelleft=False, labelright=False, bottom=True, top=True, left=True, right=True)
 
         fig.add_subplot(ax2)
@@ -237,7 +238,7 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 2, wspace=0., hspace=0., height_ratios=[0.5,]*(rows-1)+[2,], width_ratios=[5,]+[1,]*(cols-1))
 
-    ithres=0.9
+    ithres=0.5
     #plt.connect('button_press_event', onclick)
     #plt.connect('button_release_event', lambda event: onrel(event, ithres))
     offpulse_prof = offpulse(filename,gs)
