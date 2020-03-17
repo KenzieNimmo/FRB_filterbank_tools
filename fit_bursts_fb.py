@@ -11,11 +11,37 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 import re 
+import optparse
+
 
 if __name__ == '__main__':
+    parser = optparse.OptionParser(usage='%prog [options] infile', \
+                description="2D Gaussian fit to FRB data. Input the pickle file output from RFI_masker.py")
+    parser.add_option('-n', '--burst_no', dest='burst_no', type='int', \
+                      help="Burst number used as an index.", default=None)
+    parser.add_option('-g', '--guess', dest='guess', type='string', \
+                      help="Guess for gaussian fit. time_peak:time_width:freq_peak:freq_width.", default=None)
+    parser.add_option('-u', '--uncorr', dest='uncorr', action="store_true", \
+                      help="If -u option is used, use the uncorrected array (otherwise use the masked+bandpass corrected array).", default=False)
+    
+    (options, args) = parser.parse_args()
+
+    if len(args)==0:
+        parser.print_help()
+        sys.exit(1)
+    elif len(args)!=1:
+        sys.stderr.write("Only one input file must be provided!\n")
+    else:
+        options.infile = args[-1]
+        
+    if options.burst_no is None:
+        sys.stderr.write("A burst index must be provided." \
+                            "(Use -n/--burst_no on command line).\n")
+        sys.exit(1)
+
     path = './'
-    IDs_ordered = ['6']
-    pklfilename = sys.argv[1]
+    IDs_ordered = [str(options.burst_no)]
+    pklfilename = options.infile
     """
     pklfilename['array_corrected']
     pklfilename['array_uncorrected']
@@ -28,36 +54,40 @@ if __name__ == '__main__':
     
     for burst in IDs_ordered:
         burst=str(burst)
-        arr = bursts['array_corrected']
+        arr = bursts[burst]['array_corrected']
+        if options.uncorr==True:
+            arr = bursts[burst]['array_uncorrected']
         #arr=filterbank_to_arr.bp('burst4.fil','burst4_mask.pkl',6,'burst4_offpulse_time.pkl') #temporary step that will be accounted for in RFI_offpulse.py
         prof = np.mean(arr,axis=0)
         spec = np.mean(arr,axis=1)
         total_N=len(prof)
-        t_samp = bursts['t_samp']
+        t_samp = bursts[burst]['t_samp']
 
         #fil=filterbank.filterbank('burst4.fil')
         #properties of filterbank file
         #freqs = np.flip(fil.frequencies)
-        freqs = np.flip(bursts['freqs'])
+        freqs = np.flip(bursts[burst]['freqs'])
         #f_res = (freqs[-1]-freqs[0])/(fil.header['nchans']-1)
  
         stimes = np.linspace(0,arr.shape[1],arr.shape[1])
         stimes*=t_samp
         #guess=[dmax, xmax, ymax, xwid, ywid, 0]
-        if burst == "6":
-            guess = [50,242,1408,100,2816,0]
+        if options.guess!=None:
+            g=options.guess.split (':') #time_peak,time_width,freq_peak,freq_width
+            g = [int(i) for i in g]
+            guess = [50, g[0], g[2], g[1], g[3], 0]
         else: guess = []
 
         bin_times,fit, bin_center = fit_my_smudge(arr, stimes, freqs, guess=guess, doplot=True, basename=picklename)
         fits={}
         burst_properties={}
-        fits['array_corrected']=bursts['array_corrected']
-        fits['array_uncorrected']=bursts['array_uncorrected']                                                                            
-        fits['mask']=bursts['mask']
-        fits['t_samp']=bursts['t_samp']
-        fits['freqs']=bursts['freqs']
+        fits['array_corrected']=bursts[burst]['array_corrected']
+        fits['array_uncorrected']=bursts[burst]['array_uncorrected']                                                                            
+        fits['mask']=bursts[burst]['mask']
+        fits['t_samp']=bursts[burst]['t_samp']
+        fits['freqs']=bursts[burst]['freqs']
         fits['centre_bin']=bin_times[0]
-        fits['width_bin']=bin_times[1]
+        fits['width_bin']=np.abs(bin_times[1])
         
         burst_properties[burst] = fits 
     f=open("%s.pkl"%picklename, "wb")
