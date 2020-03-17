@@ -21,7 +21,6 @@ def write_data(infbfiles,outfbfile):
         outputs the chopped filterbank file.
     """
     for i in range(0,infbfiles[0].number_of_samples):
-        #data=np.zeros(infbfiles[0].header['nchans'])
         data=[]
         for j in range(len(infbfiles)):
                 data.append(infbfiles[j].read_sample())
