@@ -121,6 +121,7 @@ class RFI(object):
         self.total_N=fil.number_of_samples
         arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm)
         spectrum=np.mean(arr,axis=1)
+        self.nchans = len(spectrum)
         self.freqbins=np.arange(0,arr.shape[0],1)
         self.freqs=fil.frequencies
         threshold=np.amax(arr)-(np.abs(np.amax(arr)-np.amin(arr))*0.99)
@@ -149,18 +150,26 @@ class RFI(object):
         self.keyPress = self.canvas.mpl_connect('key_press_event', self.onKeyPress)
         self.keyRelease = self.canvas.mpl_connect('key_release_event', self.onKeyRelease)
         self.x = False
-
+        self.r = False
 
     def onKeyPress(self, event):
         if event.key == 'x':
             self.x = True
-
+        if event.key == 'r':
+            self.r = True
+            arr=self.ax1plot.get_array()
+            self.ithres-=0.005
+            threshold=np.amax(arr)-(np.abs(np.amax(arr)-np.amin(arr))*self.ithres)
+            self.ax1plot.set_clim(vmin=np.amin(arr),vmax=threshold)
+            self.cmap.set_over(color='pink')
+            plt.draw()
+            
 
     def onKeyRelease(self, event):
         if event.key == 'x':
             self.x = False
-        #if event.key == 'y':
-        #    self.y = False
+        if event.key == 'r':
+            self.r=False
 
 
     def onpress(self, event):
@@ -200,9 +209,9 @@ class RFI(object):
                 vmin = np.amin(arr)
                 index2=find_nearest(self.freqbins,y2)
                 if self.begin_chan[-1] > index2:
-                    arr[index2:self.begin_chan[-1],:]=vmin-100
+                    arr[index2:self.begin_chan[-1]+1,:]=vmin-100
                 else:
-                    arr[self.begin_chan[-1]:index2,:]=vmin-100
+                    arr[self.begin_chan[-1]:index2+1,:]=vmin-100
                 mask = arr<vmin-50
                 arr = np.ma.masked_where(mask==True,arr)
                 self.ax1plot.set_data(arr)
@@ -220,11 +229,11 @@ class RFI(object):
                 self.cmap.set_over(color='pink')
                 plt.draw()
                 if self.begin_chan[-1] > index2:
-                    for i in range(len(np.arange(index2,self.begin_chan[-1],1))):
-                        self.mask_chan.append(np.arange(index2,self.begin_chan[-1],1)[i])
+                    for i in range(len(np.arange(index2,self.begin_chan[-1]+1,1))):
+                        self.mask_chan.append(np.arange(index2,self.begin_chan[-1]+1,1)[i])
                 else:
-                    for i in range(len(np.arange(self.begin_chan[-1],index2,1))):
-                        self.mask_chan.append(np.arange(self.begin_chan[-1],index2,1)[i])
+                    for i in range(len(np.arange(self.begin_chan[-1],index2+1,1))):
+                        self.mask_chan.append(np.arange(self.begin_chan[-1],index2+1,1)[i])
                 
                 self.final_spec = np.mean(arr,axis=1)
 
@@ -308,7 +317,8 @@ if __name__ == '__main__':
     burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None)
     burst['mask']=mask_chans
     burst['t_samp']=fil.header['tsamp']
-    burst['freqs']=fil.frequencies
+    burst['tstart']=fil.header['tstart']
+    burst['freqs']=np.flip(fil.frequencies)
     burstno[str(burst_no)]=burst
 
     with open('%s.pkl'%picklename, 'wb') as f:

@@ -143,12 +143,13 @@ def convert_fit(pfit, perr, stimes, freqs, tofile=False):
 
     print "Location of center: %.1f +/- %.2f ms, %.1f +/- %.1f MHz" % (tloc*1e3, tloc_e*1e3, floc, floc_e)
     print "Widths of fit: %.2f +/- %.2f ms, %.1f +/- %.1f MHz" % (twid*1e3, twid_e*1e3, fwid, fwid_e)
-
+    times=np.append(bin_time,tloc)
+    times=np.append(times,twid)
     everything=np.array([pfit[0], tloc, tloc_e, floc, floc_e, twid, twid_e, fwid, fwid_e, pfit[5]])
     if tofile:
         np.savetxt(tofile, everything.transpose())
 
-    return bin_time, everything, bin_center
+    return times, everything, bin_center
 
 def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smudge"):
     '''
@@ -167,7 +168,7 @@ def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smu
 
     #Convert the fit from bins into physical values
     #Rows: GaussAmp, timeCenter, timeCenter_uncert, freqCenter, freqCenter_uncert, timeWidth, timeWidth_uncert, freqWidth, freqWidth_uncert, baseline
-    bin_time, cpfit, bin_center=convert_fit(pfit, uncert, stimes, freqs, tofile='%s.txt'%basename)
+    times, cpfit, bin_center=convert_fit(pfit, uncert, stimes, freqs, tofile='%s.txt'%basename)
 
     if doplot:
         #Plot fit on top of data
@@ -183,5 +184,5 @@ def fit_my_smudge(tfdata, stimes, freqs, guess=[], doplot=True, basename="my_smu
         py.savefig(basename+'_resid.png')
         py.show()
 
-    return bin_time, cpfit, bin_center
+    return times, cpfit, bin_center
 

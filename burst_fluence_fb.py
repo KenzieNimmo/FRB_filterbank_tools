@@ -54,20 +54,29 @@ y eye)
     t_cent = int(t_cent)
 
     profile = np.mean(arr,axis=0)
+    spec = np.mean(arr[:,(t_cent-width):(t_cent+width)],axis=1)
     offprof = np.mean(arr[:,offtimes],axis=0)
+    offspec = np.mean(arr[:,offtimes],axis=1)
     mean = np.mean(offprof)
+    meanspec=np.mean(offspec)
     offprof-=mean
     profile-=mean
+    spec-=meanspec
     std = np.std(offprof)
+    stdspec=np.std(offspec)
     offprof /=std
     profile/=std
+    spec/=stdspec
 
     profile_burst = profile[(t_cent-width):(t_cent+width)]
-    plt.plot(profile_burst*radiometer(tsamp,bw,2, SEFD))
-    plt.show()
+    spec_burst = spec
+    
+
     fluence= np.sum(profile_burst*radiometer(tsamp,bw,2,SEFD)*tsamp) #fluence
     flux=np.max(profile_burst*radiometer(tsamp,bw,2, SEFD)) #peak flux density
-    return fluence, flux
+    prof_flux=profile*radiometer(tsamp,bw,2, SEFD)
+    spec_flux=spec_burst*radiometer(tsamp,bw,2, SEFD)
+    return fluence, flux, prof_flux, spec_flux
 
 def energy_iso(fluence,distance_lum):
     """                                                                              Following Law et al. (2017)                                                  
@@ -135,7 +144,7 @@ rwise use the masked+bandpass corrected array).", default=False)
             arr=arr_corr
 
         tsamp = bursts[burst]['t_samp']
-        freqs = np.flip(bursts[burst]['freqs'])
+        freqs = bursts[burst]['freqs']
         nchan=len(freqs)
         fres=np.abs((freqs[-1]-freqs[0])/(nchan-1))
         bw=np.abs(freqs[-1]-freqs[0])+fres
@@ -146,10 +155,47 @@ rwise use the masked+bandpass corrected array).", default=False)
         basename=re.search('(.*).pkl',pklfilename).group(1)
         offpulse = "%s_offpulse_time.pkl"%basename
 
-        fluence, flux = fluence_flux(arr, bw, t_cent, t_fwhm, tsamp,options.SEFD, offpulse)
+        fluence, flux, prof_flux, spec_flux = fluence_flux(arr, bw, t_cent, t_fwhm, tsamp,options.SEFD, offpulse)
+
 
         print("Fluence:", fluence, "Jy ms")
         print("Flux Density:", flux, "Jy")
         if options.distance!=None:
             specenerg = energy_iso(fluence,options.distance)
             print("Spectral energy density:", specenerg, "erg Hz^{-1}")
+            
+        fits={}
+        burst_properties={}
+        fits['array_corrected']=bursts[burst]['array_corrected']
+        fits['array_uncorrected']=bursts[burst]['array_uncorrected']
+        fits['mask']=bursts[burst]['mask']
+        fits['t_samp']=bursts[burst]['t_samp']
+        fits['freqs']=bursts[burst]['freqs']
+        fits['centre_bin']=bursts[burst]['centre_bin']
+        fits['width_bin']=np.abs(bursts[burst]['width_bin'])
+        if bursts[burst].get('scint_bw')!=None:
+            fits['scint_bw']=bursts[burst]['scint_bw']
+            fits['std_ACF_fit']=bursts[burst]['std_ACF_fit']
+            fits['chisq_ACF_fit']=bursts[burst]['chisq_ACF_fit']
+            fits['dof_ACF_fit']=bursts[burst]['dof_ACF_fit']
+            fits['pval_ACF_fit']=bursts[burst]['pval_ACF_fit']
+            fits['pcov_ACF_fit']=bursts[burst]['pcov_ACF_fit']
+            fits['ACF']=bursts[burst]['ACF']
+            fits['lorentzian']=bursts[burst]['lorentzian']
+            fits['freq_lag']=bursts[burst]['freq_lag']
+            fits['freq_lorentz']=bursts[burst]['freq_lorentz']
+
+        fits['fluence']=fluence
+        fits['peakfluxdens']=flux
+        fits['prof_flux']=prof_flux
+        fits['spec_flux']=spec_flux
+        if options.distance!=None:
+            fits['specenergdens']=specenerg
+
+
+        burst_properties[burst] = fits
+        
+            
+
+        with open(pklfilename, 'wb') as f:
+            pickle.dump(burst_properties, f)

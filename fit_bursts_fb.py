@@ -12,7 +12,7 @@ import pickle
 import matplotlib.pyplot as plt
 import re 
 import optparse
-
+import barycenter_correct_fb
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage='%prog [options] infile', \
@@ -23,7 +23,9 @@ if __name__ == '__main__':
                       help="Guess for gaussian fit. time_peak:time_width:freq_peak:freq_width.", default=None)
     parser.add_option('-u', '--uncorr', dest='uncorr', action="store_true", \
                       help="If -u option is used, use the uncorrected array (otherwise use the masked+bandpass corrected array).", default=False)
-    
+    parser.add_option('-d', '--dm', dest='dm', type='float',help="Dispersion measure.", default=None)
+    parser.add_option('-f', '--FRBname', dest='FRBname', type='string',help="FRB R name.", default=None)
+    parser.add_option('-t', '--telescopename', dest='telescopename', type='string',help="Telescope used (Eff, CHIME, DSS43).", default=None)
     (options, args) = parser.parse_args()
 
     if len(args)==0:
@@ -66,7 +68,7 @@ if __name__ == '__main__':
         #fil=filterbank.filterbank('burst4.fil')
         #properties of filterbank file
         #freqs = np.flip(fil.frequencies)
-        freqs = np.flip(bursts[burst]['freqs'])
+        freqs = bursts[burst]['freqs']
         #f_res = (freqs[-1]-freqs[0])/(fil.header['nchans']-1)
  
         stimes = np.linspace(0,arr.shape[1],arr.shape[1])
@@ -78,7 +80,15 @@ if __name__ == '__main__':
             guess = [50, g[0], g[2], g[1], g[3], 0]
         else: guess = []
 
-        bin_times,fit, bin_center = fit_my_smudge(arr, stimes, freqs, guess=guess, doplot=True, basename=picklename)
+        times,fit, bin_center = fit_my_smudge(arr, stimes, freqs, guess=guess, doplot=True, basename=picklename)
+        #times is peak bin, width bin, peak time in seconds, width time in seconds.
+        if options.dm!=None:
+            nchan=len(spec)
+            chanwidth=(freqs[-1]-freqs[0]/nchan)
+            peak_time=barycenter_correct_fb.barycorr(bursts[burst]['tstart'],times[2],(freqs[-1]+chanwidth/2.),options.dm,FRB=str(options.FRBname),telescope=str(options.telescopename))
+            print(peak_time)
+
+
         fits={}
         burst_properties={}
         fits['array_corrected']=bursts[burst]['array_corrected']
@@ -86,8 +96,8 @@ if __name__ == '__main__':
         fits['mask']=bursts[burst]['mask']
         fits['t_samp']=bursts[burst]['t_samp']
         fits['freqs']=bursts[burst]['freqs']
-        fits['centre_bin']=bin_times[0]
-        fits['width_bin']=np.abs(bin_times[1])
+        fits['centre_bin']=times[0]
+        fits['width_bin']=np.abs(times[1])
         
         burst_properties[burst] = fits 
     f=open("%s.pkl"%picklename, "wb")
