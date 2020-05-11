@@ -53,10 +53,10 @@ y eye)
     width=int((width*2./conv))
     t_cent = int(t_cent)
 
-    profile = np.mean(arr,axis=0)
-    spec = np.mean(arr[:,(t_cent-width):(t_cent+width)],axis=1)
-    offprof = np.mean(arr[:,offtimes],axis=0)
-    offspec = np.mean(arr[:,offtimes],axis=1)
+    profile = np.sum(arr,axis=0)
+    spec = np.sum(arr[:,(t_cent-width):(t_cent+width)],axis=1)
+    offprof = np.sum(arr[:,offtimes],axis=0)
+    offspec = np.sum(arr[:,offtimes],axis=1)
     mean = np.mean(offprof)
     meanspec=np.mean(offspec)
     offprof-=mean
@@ -80,24 +80,24 @@ y eye)
     prof_flux=profile*radiometer(tsamp,bw,2, SEFD)
     spec_flux=spec_burst*radiometer(tsamp,bw,2, SEFD)
 
-    #assuming 20% error on SEFD and ignore all others ?!
-    #errors=0.2*profile_burst*radiometer(tsamp,bw,2,SEFD)*tsamp
+    #assuming 20% error on SEFD dominates, even if you consider the errors on width and add them in quadrature i.e. sigma_flux**2+sigma_width**2=sigma_fluence**2, sigma_fluence~0.2
+    fluence_error=0.2*fluence
     
-    error_bin=(width_error/len(profile_burst))
-    errors=[]
-    for i in range(len(profile_burst)):
-        error_box=np.abs(profile_burst[i]*radiometer(tsamp,bw,2,SEFD)*tsamp)*np.sqrt((0.2)**2+(error_bin)**2)
-        errors=np.append(errors,error_box)
+    #error_bin=(width_error/len(profile_burst))
+    #errors=[]
+    #for i in range(len(profile_burst)):
+    #    error_box=np.abs(profile_burst[i]*radiometer(tsamp,bw,2,SEFD)*tsamp)*np.sqrt((0.2)**2+(error_bin)**2)
+    #    errors=np.append(errors,error_box)
     
-    x=0
-    for i in range(len(errors)):
-        x+=errors[i]**2
+    #x=0
+    #for i in range(len(errors)):
+    #    x+=errors[i]**2
 
-    fluence_error=np.sqrt(x)
+    #fluence_error=np.sqrt(x)
 
     return fluence, flux, prof_flux, spec_flux,peakSNR,fluence_error
 
-def energy_iso(fluence,distance_lum,fluence_error,distance_error):
+def energy_iso(fluence,distance_lum):
     """                                                                              Following Law et al. (2017)                                                  
     fluence in Jy ms                               
     distance_lum in Mpc                                                          
