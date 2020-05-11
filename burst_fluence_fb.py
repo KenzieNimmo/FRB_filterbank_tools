@@ -23,7 +23,7 @@ def radiometer(tsamp, bw, npol, SEFD):
     return (SEFD)*(1/np.sqrt((bw*1.e6)*npol*tsamp*1e-3))
 
 
-def fluence_flux(arr, bw, t_cent, width, tsamp, SEFD, offpulse):
+def fluence_flux(arr, bw, t_cent, width, width_error, tsamp, SEFD, offpulse):
     """
     fluence_flux(arr, bw, t_cent, width, tsamp, offpulse)
     arr is the burst dynamic spectrum
@@ -63,6 +63,8 @@ y eye)
     profile-=mean
     spec-=meanspec
     std = np.std(offprof)
+    print(std)
+
     stdspec=np.std(offspec)
     offprof /=std
     profile/=std
@@ -73,12 +75,29 @@ y eye)
     
 
     fluence= np.sum(profile_burst*radiometer(tsamp,bw,2,SEFD)*tsamp) #fluence
+    peakSNR = np.max(profile_burst)
     flux=np.max(profile_burst*radiometer(tsamp,bw,2, SEFD)) #peak flux density
     prof_flux=profile*radiometer(tsamp,bw,2, SEFD)
     spec_flux=spec_burst*radiometer(tsamp,bw,2, SEFD)
-    return fluence, flux, prof_flux, spec_flux
 
-def energy_iso(fluence,distance_lum):
+    #assuming 20% error on SEFD and ignore all others ?!
+    #errors=0.2*profile_burst*radiometer(tsamp,bw,2,SEFD)*tsamp
+    
+    error_bin=(width_error/len(profile_burst))
+    errors=[]
+    for i in range(len(profile_burst)):
+        error_box=np.abs(profile_burst[i]*radiometer(tsamp,bw,2,SEFD)*tsamp)*np.sqrt((0.2)**2+(error_bin)**2)
+        errors=np.append(errors,error_box)
+    
+    x=0
+    for i in range(len(errors)):
+        x+=errors[i]**2
+
+    fluence_error=np.sqrt(x)
+
+    return fluence, flux, prof_flux, spec_flux,peakSNR,fluence_error
+
+def energy_iso(fluence,distance_lum,fluence_error,distance_error):
     """                                                                              Following Law et al. (2017)                                                  
     fluence in Jy ms                               
     distance_lum in Mpc                                                          
@@ -135,6 +154,18 @@ rwise use the masked+bandpass corrected array).", default=False)
     IDs_ordered=[str(options.burst_no)]
     for burst in IDs_ordered:
         burst=str(burst)
+        if burst == '1':
+            width_error=(0.06/64.512e-3)
+        if burst == '2':
+            width_error=(0.18/64.512e-3)
+        if burst == '3':
+            width_error=(0.09/64.512e-3)
+        if burst == '4':
+            width_error=(0.07/64.512e-3)
+        if burst == '5':
+            width_error=(0.19/64.512e-3)
+        if burst == '6':
+            width_error=(0.03/64.512e-3)
 
         arr_corr = bursts[burst]['array_corrected']
         arr_uncorr = bursts[burst]['array_uncorrected'] #no rfi masking or bp correction
@@ -155,10 +186,10 @@ rwise use the masked+bandpass corrected array).", default=False)
         basename=re.search('(.*).pkl',pklfilename).group(1)
         offpulse = "%s_offpulse_time.pkl"%basename
 
-        fluence, flux, prof_flux, spec_flux = fluence_flux(arr, bw, t_cent, t_fwhm, tsamp,options.SEFD, offpulse)
+        fluence, flux, prof_flux, spec_flux, peakSNR, fluence_error = fluence_flux(arr, bw, t_cent, t_fwhm, width_error, tsamp,options.SEFD, offpulse)
 
-
-        print("Fluence:", fluence, "Jy ms")
+        print("Peak S/N", peakSNR)
+        print("Fluence:", fluence,"+-",fluence_error, "Jy ms")
         print("Flux Density:", flux, "Jy")
         if options.distance!=None:
             specenerg = energy_iso(fluence,options.distance)
@@ -189,6 +220,7 @@ rwise use the masked+bandpass corrected array).", default=False)
         fits['peakfluxdens']=flux
         fits['prof_flux']=prof_flux
         fits['spec_flux']=spec_flux
+        fits['peakSNR']=peakSNR
         if options.distance!=None:
             fits['specenergdens']=specenerg
 
