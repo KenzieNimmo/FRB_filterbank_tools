@@ -18,6 +18,8 @@ import pickle
 import os
 import re
 import optparse
+import psrfits
+
 
 def find_nearest(array, value):
     array = np.asarray(array)
@@ -25,7 +27,7 @@ def find_nearest(array, value):
     return idx
 
 class offpulse(object):
-    def __init__(self,filename,gs,dm):
+    def __init__(self,filename,gs,dm,AO):
         self.begin_times=[]
         self.end_times=[]
         self.lines={}
@@ -39,9 +41,16 @@ class offpulse(object):
         self.axes = ax2 # off pulse only necessary for the profile which is in subplot ax2
 
         self.canvas = ax2.figure.canvas
-        fil=filterbank.filterbank(filename)
-        arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None,bandpass=False)
+
+        if filename.endswith(".fil"):
+            fil=filterbank.filterbank(filename)
+            arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None,bandpass=False)
         
+ 
+        if filename.endswith(".fits"):
+            fits=psrfits.PsrfitsFile(filename)
+            arr = filterbank_to_arr.fits_to_np(filename,dm=dm,maskfile=None,bandpass=False,offpulse=None, nbins=6,AO=AO)
+
         profile=np.mean(arr,axis=0)
 
         self.ax2plot, = ax2.plot(profile, 'k-',alpha=1.0,zorder=1)
@@ -110,20 +119,29 @@ class offpulse(object):
 
 
 class RFI(object):
-    def __init__(self,filename,gs,prof,ds,spec,ithres,ax2,dm):
+    def __init__(self,filename,gs,prof,ds,spec,ithres,ax2,dm,AO):
         self.begin_chan = []
         self.mask_chan = []
         self.axes = ds # off pulse only necessary for the profile which is in subplot ax2
         self.canvas = ds.figure.canvas
         self.ithres = ithres
 
-        fil=filterbank.filterbank(filename)
-        self.total_N=fil.number_of_samples
-        arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm)
+        
+        if filename.endswith(".fil"):
+            fil=filterbank.filterbank(filename)
+            arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None,bandpass=False)
+            self.total_N=fil.number_of_samples
+            self.freqs=fil.frequencies
+
+        if filename.endswith(".fits"):
+            fits=psrfits.PsrfitsFile(filename)
+            arr = filterbank_to_arr.fits_to_np(filename,dm=dm,maskfile=None,bandpass=False,offpulse=None, nbins=6,AO=AO)
+            self.total_N=arr.shape[1]
+            self.freqs=fits.frequencies
+
         spectrum=np.mean(arr,axis=1)
         self.nchans = len(spectrum)
         self.freqbins=np.arange(0,arr.shape[0],1)
-        self.freqs=fil.frequencies
         threshold=np.amax(arr)-(np.abs(np.amax(arr)-np.amin(arr))*0.99)
 
         self.cmap = mpl.cm.binary
@@ -135,6 +153,7 @@ class RFI(object):
         self.cmap.set_over(color='pink')
         self.cmap.set_bad(color='red')
         self.ax1.set_xlim(0,self.total_N)
+        
         self.ax3plot, = self.ax3.plot(spectrum, self.freqbins, 'k-',zorder=2)
         self.ax3.tick_params(axis='x', which='both', top='off', bottom='off', labelbottom='off')
         self.ax3.tick_params(axis='y', labelleft='off')
@@ -242,12 +261,13 @@ if __name__ == '__main__':
                 description="Interactive RFI zapper")
     parser.add_option('-d', '--dm', dest='dm', type='float', \
                       help="Dispersion measure.", default=0)
-    parser.add_option('-n', '--burst_no', dest='burst_no', type='int', \
-                help="Burst index number", default=0)
+    
     parser.add_option('-b', '--bandpass', dest='bandpass', action="store_true", \
                       help="If -b option is used,bandpass correction is applied (otherwise no bandpass correction: only masking).", default=False)
+    parser.add_option('--AO', dest='AO', action="store_true", \
+                      help="Give --AO option if this data is part of the FRB 121102 monitoring program. ", default=False)
     (options, args) = parser.parse_args()
-
+    print(args)
     if len(args)==0:
         parser.print_help()
         sys.exit(1)
@@ -256,34 +276,55 @@ if __name__ == '__main__':
     else:
         options.infile = args[-1]
 
-    if options.burst_no is None:
-        sys.stderr.write("A burst index must be provided. " \
-                            "(Use -n/--burst_no on command line).\n")
-        sys.exit(1)
+    
 
-    burst_no=options.burst_no
+    
     dm=options.dm
-    filfile = options.infile
+    filename = options.infile
+
+    if filename.endswith(".fil"):
+            fil=filterbank.filterbank(filename)
+            total_N = fil.number_of_samples
+            tot_freq = fil.header['nchans']
+            picklename = re.search('(.*).fil',filename).group(1)
+            t_samp=fil.header['tsamp']
+            tstart=fil.header['tstart']
+            freqs=np.flip(fil.frequencies)
+
+    if filename.endswith(".fits"):
+            fits=psrfits.PsrfitsFile(filename)
+            total_N=fits.specinfo.N
+            t_samp=fits.specinfo.dt
+            freqs=np.flip(fits.frequencies)
+            if options.AO==True:
+                total_N=int(0.2/t_samp)
+            picklename = re.search('(.*).fits',filename).group(1)
+            tot_freq = fits.specinfo.num_channels
+            #start time of data block
+            imjd,fmjd=psrfits.DATEOBS_to_MJD(fits.specinfo.date_obs)
+            tstart=imjd+fmjd
+            if options.AO==True:
+                peak_bin=(total_N/10.)*2
+                begin_bin=int(peak_bin-(0.1/t_samp))
+                begin_sec=begin_bin*t_samp
+                begin_MJD=begin_sec/(24.*3600.)
+                tstart+=begin_MJD
+
 
     rows=2
     cols=2
-    path = './'
-    filename = os.path.join(path,filfile)
-    fil=filterbank.filterbank(filename)
-    total_N = fil.number_of_samples
-    tot_freq = fil.header['nchans']
     fig = plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 2, wspace=0., hspace=0., height_ratios=[0.5,]*(rows-1)+[2,], width_ratios=[5,]+[1,]*(cols-1))
 
     ithres=0.5
     #plt.connect('button_press_event', onclick)
     #plt.connect('button_release_event', lambda event: onrel(event, ithres))
-    offpulse_prof = offpulse(filename,gs,dm)
+    offpulse_prof = offpulse(filename,gs,dm,options.AO)
     ds = offpulse_prof.ds
     spec = offpulse_prof.spec
     prof = offpulse_prof.ax2plot
     ax2 = offpulse_prof.axes
-    RFImask = RFI(filename,gs,prof,ds,spec,ithres,ax2,dm)
+    RFImask = RFI(filename,gs,prof,ds,spec,ithres,ax2,dm,options.AO)
     plt.show()
 
     begin_times = offpulse_prof.begin_times
@@ -293,11 +334,10 @@ if __name__ == '__main__':
     else:
         off_pulse=np.append(np.arange(0,end_times[-1],1),np.arange(begin_times[-1],total_N,1))
 
-    picklename = re.search('(.*).fil',filfile).group(1)
-
+    
     numchan = np.zeros_like(RFImask.mask_chan)
     numchan+=tot_freq
-    mask_chans = np.abs(numchan-np.array(RFImask.mask_chan))
+    mask_chans = np.abs(numchan-np.array(RFImask.mask_chan)-1)
     
     offpulsefile = '%s_offpulse_time.pkl'%picklename
     with open(offpulsefile, 'wb') as foff:
@@ -309,21 +349,31 @@ if __name__ == '__main__':
 
 
     burst = {}
-    burstno = {}
-    if options.bandpass ==True:
-        burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
-    else: 
-        burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6) #zapped array
-    burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None)
+
+    if filename.endswith(".fil"):
+        if options.bandpass ==True:
+            burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
+        else:
+            burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6)#zapped array
+        burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None)
+        burst['undedisp_array']=filterbank_to_arr.filterbank_to_np(filename,dm=0, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6) #undedisp and masked
+    if filename.endswith(".fits"):
+        if options.bandpass ==True:
+            burst['array_corrected']=filterbank_to_arr.fits_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, nbins=6,AO=options.AO) #zapped and bp corrected array
+        else:
+            burst['array_corrected']=filterbank_to_arr.fits_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6,AO=options.AO) #zapped array 
+        burst['array_uncorrected']=filterbank_to_arr.fits_to_np(filename,dm=dm,maskfile=None,bandpass=False,offpulse=None,nbins=6,AO=options.AO)
+        burst['undedisp_array']=filterbank_to_arr.fits_to_np(filename,dm=0, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6,AO=False)
+
+
     burst['mask']=mask_chans
-    burst['t_samp']=fil.header['tsamp']
-    burst['tstart']=fil.header['tstart']
-    burst['freqs']=np.flip(fil.frequencies)
-    burstno[str(burst_no)]=burst
+    burst['t_samp']=t_samp
+    burst['tstart']=tstart
+    burst['freqs']=freqs
+    burst['DM']=options.dm
 
     with open('%s.pkl'%picklename, 'wb') as f:
-        pickle.dump(burstno, f)
+        pickle.dump(burst, f)
 
 
-    plt.plot(RFImask.final_spec)
-    plt.show()
+    
