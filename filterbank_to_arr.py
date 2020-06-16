@@ -33,8 +33,7 @@ def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, 
     total_N=fits.specinfo.N
     t_samp=fits.specinfo.dt
     if AO==True:
-        peak_bin=(total_N/10.)*2 #the chopped filterbank is 10 subints (2 before \
-the burst and 8 after)
+        peak_bin=(total_N/10.)*2 #the chopped filterbank is 10 subints (2 before the burst and 8 after)
         #+-0.1seconds
         begin_bin=int(peak_bin-(0.1/t_samp)) #number of bins
         end_bin=int(peak_bin+(0.1/t_samp))
