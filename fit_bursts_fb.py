@@ -88,6 +88,6 @@ if __name__ == '__main__':
         
         
     f=open("%s.pkl"%picklename, "wb")
-    pickle.dump(fits,f)
+        pickle.dump(fits,f)
     f.close()
         
