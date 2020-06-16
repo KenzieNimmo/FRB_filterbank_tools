@@ -28,8 +28,7 @@ def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=
         arr=bp(filename,maskfile,nbins,offpulse)
     return arr
 
-def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, n\
-bins=6,AO=False):
+def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, nbins=6,AO=False):
     fits=psrfits.PsrfitsFile(filename)
     total_N=fits.specinfo.N
     t_samp=fits.specinfo.dt
