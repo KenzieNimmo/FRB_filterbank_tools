@@ -86,8 +86,7 @@ if __name__ == '__main__':
     fits['centre_bin']=times[0]
     fits['width_bin']=np.abs(times[1])
         
-        
-    f=open("%s.pkl"%picklename, "wb")
+    with open("%s.pkl"%picklename, 'wb') as f:    
         pickle.dump(fits,f)
     f.close()
         
