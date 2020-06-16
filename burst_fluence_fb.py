@@ -113,8 +113,6 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage='%prog [options] infile', \
                 description="Fluence and peak flux density of FRB. Input the pickle file o\
 utput from fit_burst_fb.py.")
-    parser.add_option('-n', '--burst_no', dest='burst_no', type='int', \
-                      help="Burst number used as an index.", default=None)
     parser.add_option('-S', '--SEFD', dest='SEFD', type='float', \
                       help="System Equivalent Flux Density [Jy].", default=None)
     parser.add_option('-d', '--distance', dest='distance', type='float', \
@@ -133,11 +131,6 @@ rwise use the masked+bandpass corrected array).", default=False)
     else:
         options.infile = args[-1]
 
-    if options.burst_no is None:
-        sys.stderr.write("A burst index must be provided." \
-                            "(Use -n/--burst_no on command line).\n")
-        sys.exit(1)
-
     if options.SEFD is None:
         sys.stderr.write("An SEFD must be provided." \
                             "(Use -S/--SEFD on command line).\n")
@@ -151,9 +144,8 @@ rwise use the masked+bandpass corrected array).", default=False)
     f.close()
 
     path='./'
-    IDs_ordered=[str(options.burst_no)]
-    for burst in IDs_ordered:
-        burst=str(burst)
+    
+    """    
         if burst == '1':
             width_error=(0.06/64.512e-3)
         if burst == '2':
@@ -166,68 +158,65 @@ rwise use the masked+bandpass corrected array).", default=False)
             width_error=(0.19/64.512e-3)
         if burst == '6':
             width_error=(0.03/64.512e-3)
+    """
+    arr_corr = bursts['array_corrected']
+    arr_uncorr = bursts['array_uncorrected'] #no rfi masking or bp correction
+    if options.uncorr == True:
+        arr=arr_uncorr
+    else:
+        arr=arr_corr
 
-        arr_corr = bursts[burst]['array_corrected']
-        arr_uncorr = bursts[burst]['array_uncorrected'] #no rfi masking or bp correction
-        if options.uncorr == True:
-            arr=arr_uncorr
-        else:
-            arr=arr_corr
-
-        tsamp = bursts[burst]['t_samp']
-        freqs = bursts[burst]['freqs']
-        nchan=len(freqs)
-        fres=np.abs((freqs[-1]-freqs[0])/(nchan-1))
-        bw=np.abs(freqs[-1]-freqs[0])+fres
+    tsamp = bursts['t_samp']
+    freqs = bursts['freqs']
+    nchan=len(freqs)
+    fres=np.abs((freqs[-1]-freqs[0])/(nchan-1))
+    bw=np.abs(freqs[-1]-freqs[0])+fres
         
-        t_cent = bursts[burst]['centre_bin']
-        t_fwhm = bursts[burst]['width_bin']
+    t_cent = bursts['centre_bin']
+    t_fwhm = bursts['width_bin']
         
-        basename=re.search('(.*).pkl',pklfilename).group(1)
-        offpulse = "%s_offpulse_time.pkl"%basename
+    basename=re.search('(.*).pkl',pklfilename).group(1)
+    offpulse = "%s_offpulse_time.pkl"%basename
 
-        fluence, flux, prof_flux, spec_flux, peakSNR, fluence_error = fluence_flux(arr, bw, t_cent, t_fwhm, width_error, tsamp,options.SEFD, offpulse)
+    fluence, flux, prof_flux, spec_flux, peakSNR, fluence_error = fluence_flux(arr, bw, t_cent, t_fwhm, width_error, tsamp,options.SEFD, offpulse)
 
-        print("Peak S/N", peakSNR)
-        print("Fluence:", fluence,"+-",fluence_error, "Jy ms")
-        print("Flux Density:", flux, "Jy")
-        if options.distance!=None:
-            specenerg = energy_iso(fluence,options.distance)
-            print("Spectral energy density:", specenerg, "erg Hz^{-1}")
+    print("Peak S/N", peakSNR)
+    print("Fluence:", fluence,"+-",fluence_error, "Jy ms")
+    print("Flux Density:", flux, "Jy")
+    if options.distance!=None:
+        specenerg = energy_iso(fluence,options.distance)
+        print("Spectral energy density:", specenerg, "erg Hz^{-1}")
             
-        fits={}
-        burst_properties={}
-        fits['array_corrected']=bursts[burst]['array_corrected']
-        fits['array_uncorrected']=bursts[burst]['array_uncorrected']
-        fits['mask']=bursts[burst]['mask']
-        fits['t_samp']=bursts[burst]['t_samp']
-        fits['freqs']=bursts[burst]['freqs']
-        fits['centre_bin']=bursts[burst]['centre_bin']
-        fits['width_bin']=np.abs(bursts[burst]['width_bin'])
-        if bursts[burst].get('scint_bw')!=None:
-            fits['scint_bw']=bursts[burst]['scint_bw']
-            fits['std_ACF_fit']=bursts[burst]['std_ACF_fit']
-            fits['chisq_ACF_fit']=bursts[burst]['chisq_ACF_fit']
-            fits['dof_ACF_fit']=bursts[burst]['dof_ACF_fit']
-            fits['pval_ACF_fit']=bursts[burst]['pval_ACF_fit']
-            fits['pcov_ACF_fit']=bursts[burst]['pcov_ACF_fit']
-            fits['ACF']=bursts[burst]['ACF']
-            fits['lorentzian']=bursts[burst]['lorentzian']
-            fits['freq_lag']=bursts[burst]['freq_lag']
-            fits['freq_lorentz']=bursts[burst]['freq_lorentz']
+    fits={}
+        
+    fits['array_corrected']=bursts['array_corrected']
+    fits['array_uncorrected']=bursts['array_uncorrected']
+    fits['mask']=bursts['mask']
+    fits['t_samp']=bursts['t_samp']
+    fits['freqs']=bursts['freqs']
+    fits['centre_bin']=bursts['centre_bin']
+    fits['width_bin']=np.abs(bursts['width_bin'])
+    if bursts.get('scint_bw')!=None:
+        fits['scint_bw']=bursts['scint_bw']
+        fits['std_ACF_fit']=bursts['std_ACF_fit']
+        fits['chisq_ACF_fit']=bursts['chisq_ACF_fit']
+        fits['dof_ACF_fit']=bursts['dof_ACF_fit']
+        fits['pval_ACF_fit']=bursts['pval_ACF_fit']
+        fits['pcov_ACF_fit']=bursts['pcov_ACF_fit']
+        fits['ACF']=bursts['ACF']
+        fits['lorentzian']=bursts['lorentzian']
+        fits['freq_lag']=bursts['freq_lag']
+        fits['freq_lorentz']=bursts['freq_lorentz']
 
-        fits['fluence']=fluence
-        fits['peakfluxdens']=flux
-        fits['prof_flux']=prof_flux
-        fits['spec_flux']=spec_flux
-        fits['peakSNR']=peakSNR
-        if options.distance!=None:
-            fits['specenergdens']=specenerg
-
-
-        burst_properties[burst] = fits
+    fits['fluence']=fluence
+    fits['peakfluxdens']=flux
+    fits['prof_flux']=prof_flux
+    fits['spec_flux']=spec_flux
+    fits['peakSNR']=peakSNR
+    if options.distance!=None:
+        fits['specenergdens']=specenerg
         
             
 
-        with open(pklfilename, 'wb') as f:
-            pickle.dump(burst_properties, f)
+    with open(pklfilename, 'wb') as f:
+        pickle.dump(fits, f)
