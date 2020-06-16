@@ -183,7 +183,7 @@ rwise use the masked+bandpass corrected array).", default=False)
 
     print("Peak S/N", peakSNR)
     print("Fluence:", fluence,"+-",fluence_error, "Jy ms")
-    print("Flux Density:", flux, "Jy")
+    print("Peak Flux Density:", flux, "Jy")
     if options.distance!=None:
         specenerg = energy_iso(fluence,options.distance)
         print("Spectral energy density:", specenerg, "erg Hz^{-1}")
