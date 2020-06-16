@@ -23,7 +23,8 @@ def radiometer(tsamp, bw, npol, SEFD):
     return (SEFD)*(1/np.sqrt((bw*1.e6)*npol*tsamp*1e-3))
 
 
-def fluence_flux(arr, bw, t_cent, width, width_error, tsamp, SEFD, offpulse):
+def fluence_flux(arr, bw, t_cent, width, tsamp,SEFD, offpulse)
+#(arr, bw, t_cent, width, width_error, tsamp, SEFD, offpulse):
     """
     fluence_flux(arr, bw, t_cent, width, tsamp, offpulse)
     arr is the burst dynamic spectrum
