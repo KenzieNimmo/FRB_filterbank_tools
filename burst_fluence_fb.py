@@ -179,7 +179,7 @@ rwise use the masked+bandpass corrected array).", default=False)
     basename=re.search('(.*).pkl',pklfilename).group(1)
     offpulse = "%s_offpulse_time.pkl"%basename
 
-    fluence, flux, prof_flux, spec_flux, peakSNR, fluence_error = fluence_flux(arr, bw, t_cent, t_fwhm, width_error, tsamp,options.SEFD, offpulse)
+    fluence, flux, prof_flux, spec_flux, peakSNR, fluence_error = fluence_flux(arr, bw, t_cent, t_fwhm, tsamp,options.SEFD, offpulse)
 
     print("Peak S/N", peakSNR)
     print("Fluence:", fluence,"+-",fluence_error, "Jy ms")
