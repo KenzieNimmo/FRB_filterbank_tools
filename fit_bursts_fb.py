@@ -69,10 +69,10 @@ if __name__ == '__main__':
 
     times,fit, bin_center = fit_my_smudge(arr, stimes, freqs, guess=guess, doplot=True, basename=picklename)
     #times is peak bin, width bin, peak time in seconds, width time in seconds.
-    if options.dm!=None:
-        nchan=len(spec)
-        chanwidth=(freqs[-1]-freqs[0]/nchan)
-        peak_time=barycenter_correct_fb.barycorr(bursts['tstart'],times[2],(freqs[-1]+chanwidth/2.),options.dm,FRB=str(options.FRBname),telescope=str(options.telescopename))
+    #if options.dm!=None:
+        #nchan=len(spec)
+        #chanwidth=(freqs[-1]-freqs[0]/nchan)
+        #peak_time=barycenter_correct_fb.barycorr(bursts['tstart'],times[2],(freqs[-1]+chanwidth/2.),options.dm,FRB=str(options.FRBname),telescope=str(options.telescopename))
         #print(peak_time)
 
 
