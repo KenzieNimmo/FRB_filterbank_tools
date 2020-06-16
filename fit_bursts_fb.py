@@ -76,15 +76,15 @@ if __name__ == '__main__':
         #print(peak_time)
 
 
-        fits={}
+    fits={}
 
-        fits['array_corrected']=bursts['array_corrected']
-        fits['array_uncorrected']=bursts['array_uncorrected']                                                                            
-        fits['mask']=bursts['mask']
-        fits['t_samp']=bursts['t_samp']
-        fits['freqs']=bursts['freqs']
-        fits['centre_bin']=times[0]
-        fits['width_bin']=np.abs(times[1])
+    fits['array_corrected']=bursts['array_corrected']
+    fits['array_uncorrected']=bursts['array_uncorrected']                                                                            
+    fits['mask']=bursts['mask']
+    fits['t_samp']=bursts['t_samp']
+    fits['freqs']=bursts['freqs']
+    fits['centre_bin']=times[0]
+    fits['width_bin']=np.abs(times[1])
         
         
     f=open("%s.pkl"%picklename, "wb")
