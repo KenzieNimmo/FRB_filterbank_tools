@@ -209,22 +209,21 @@ if __name__ == '__main__':
         """
     
         path='./'
-        IDs_ordered=[str(sys.argv[2])]
-        for burst in IDs_ordered:
-                burst=str(burst)
+        
+        
                                 
-                arr_corr = bursts[burst]['array_corrected']
-                arr_uncorr = bursts[burst]['array_uncorrected'] #no rfi masking or bp correction
-                mask = bursts[burst]['mask']
-                #mask=np.array([np.arange(65,129,1),np.arange(194,258,1),np.arange(323,387,1),np.arange(452,516,1),np.arange(581,645,1)])
-                #mask=np.array([np.arange(257,512,1),np.arange(769,1024,1),np.arange(1281,1536,1),np.arange(1793,2048,1),np.arange(2305,2560,1)])
-                mask=np.hstack(mask)
-                mask=list(mask)
-                tsamp = bursts[burst]['t_samp']
-                freqs = bursts[burst]['freqs']
-                t_cent = bursts[burst]['centre_bin']
-                t_fwhm = bursts[burst]['width_bin']
-                normalisefile = "%s_offpulse_time.pkl"%basename
+        arr_corr = bursts['array_corrected']
+        arr_uncorr = bursts['array_uncorrected'] #no rfi masking or bp correction
+        mask = bursts[burst]['mask']
+        #mask=np.array([np.arange(65,129,1),np.arange(194,258,1),np.arange(323,387,1),np.arange(452,516,1),np.arange(581,645,1)])
+        #mask=np.array([np.arange(257,512,1),np.arange(769,1024,1),np.arange(1281,1536,1),np.arange(1793,2048,1),np.arange(2305,2560,1)])
+        mask=np.hstack(mask)
+        mask=list(mask)
+        tsamp = bursts['t_samp']
+        freqs = bursts['freqs']
+        t_cent = bursts['centre_bin']
+        t_fwhm = bursts['width_bin']
+        normalisefile = "%s_offpulse_time.pkl"%basename
 
                 ACF, delta_f, ACFoff = scint_bw(arr_corr,mask,freqs,t_cent,t_fwhm,normalise=normalisefile)
 
@@ -301,14 +300,14 @@ if __name__ == '__main__':
         
 
                 fits={}
-                burst_properties={}
-                fits['array_corrected']=bursts[burst]['array_corrected']
-                fits['array_uncorrected']=bursts[burst]['array_uncorrected']   
-                fits['mask']=bursts[burst]['mask']
-                fits['t_samp']=bursts[burst]['t_samp']
-                fits['freqs']=bursts[burst]['freqs']
-                fits['centre_bin']=bursts[burst]['centre_bin']
-                fits['width_bin']=np.abs(bursts[burst]['width_bin'])
+                
+                fits['array_corrected']=bursts['array_corrected']
+                fits['array_uncorrected']=bursts['array_uncorrected']   
+                fits['mask']=bursts['mask']
+                fits['t_samp']=bursts['t_samp']
+                fits['freqs']=bursts['freqs']
+                fits['centre_bin']=bursts['centre_bin']
+                fits['width_bin']=np.abs(bursts['width_bin'])
                 fits['scint_bw']=bw
                 fits['std_ACF_fit']=std
                 fits['chisq_ACF_fit']=chisq
@@ -320,15 +319,15 @@ if __name__ == '__main__':
                 fits['freq_lag']=delta_f
                 fits['freq_lorentz']=deltafc
 
-                if bursts[burst].get('fluence'):
-                        fits['fluence']=bursts[burst]['fluence']
-                        fits['peakfluxdens']=bursts[burst]['peakfluxdens']
-                        fits['prof_flux']=bursts[burst]['prof_flux']
-                        if bursts[burst].get('specenergdens'): fits['specenergdens']=bursts[burst]['specenergdens']
+                if bursts.get('fluence'):
+                        fits['fluence']=bursts['fluence']
+                        fits['peakfluxdens']=bursts['peakfluxdens']
+                        fits['prof_flux']=bursts['prof_flux']
+                        if bursts.get('specenergdens'): fits['specenergdens']=bursts['specenergdens']
 
-                burst_properties[burst] = fits
+               
 
         f=open("%s.pkl"%basename, "wb")
-        pickle.dump(burst_properties,f)
+        pickle.dump(fits,f)
         f.close()
         print("done")
