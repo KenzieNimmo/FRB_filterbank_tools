@@ -129,7 +129,8 @@ def bp(filename,maskfile,nbins,offpulsefile,kind='slinear'):
     offpulse=pickle.load(open(offpulsefile,'rb'))
     spec = np.mean(arr[:,offpulse],axis=1)
     # smooth the bandpass spectrum
-    spec_smooth = smooth(spec,window_len=10)
+    speclen=len(spec)
+    spec_smooth = smooth(spec,window_len=10)[:speclen]
 
     plt.plot(spec)
     plt.plot(spec_smooth)
