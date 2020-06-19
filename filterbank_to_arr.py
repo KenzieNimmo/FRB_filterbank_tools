@@ -8,7 +8,7 @@ import pickle
 from scipy.interpolate import interp1d as interp
 import matplotlib.pyplot as plt
 
-def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, nbins=6):
+def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, smooth_val=None):
     fil = filterbank.filterbank(filename)
     total_N = fil.number_of_samples
     spec=fil.get_spectra(0,total_N)
@@ -25,7 +25,7 @@ def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=
         arr = np.ma.masked_where(mask==True,arr)
     arr=np.flip(arr,0)
     if bandpass==True and offpulse!=None:
-        arr=bp(filename,maskfile,nbins,offpulse)
+        arr=bp(filename,maskfile,nbins,offpulse,smooth_val=smooth_val)
     return arr
 
 def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, nbins=6,AO=False):
@@ -114,7 +114,7 @@ def smooth(x,window_len=11,window='hanning'):
 
 
 
-def bp(filename,maskfile,nbins,offpulsefile,kind='slinear'):
+def bp(filename,maskfile,nbins,offpulsefile,smooth_val=None):
     """
     Uses off pulse data (identified using interactive RFI_masker.py) to normalise the spectrum and
     calibrate the bandpass
@@ -128,11 +128,8 @@ def bp(filename,maskfile,nbins,offpulsefile,kind='slinear'):
     spec = np.mean(arr[:,offpulse],axis=1)
     # smooth the bandpass spectrum
     speclen=len(spec)
-    spec_smooth = smooth(spec,window_len=10)[:speclen]
-
-    plt.plot(spec)
-    plt.plot(spec_smooth)
-    plt.show()
+    if smooth_val!=None:
+        spec = smooth(spec,window_len=smooth_val)[:speclen]
 
     if maskfile!=None:
         amaskfile = pickle.load(open(maskfile,'rb'))
@@ -142,7 +139,7 @@ def bp(filename,maskfile,nbins,offpulsefile,kind='slinear'):
         arr = np.ma.masked_where(maskarr==True,arr)
     arr2=arr.copy()
     for i in range(arr.shape[1]):
-        arr2[:,i]/=spec_smooth
+        arr2[:,i]/=spec
         #arr[:,i]/=maskfit
 
     arr2-=np.mean(arr2)
