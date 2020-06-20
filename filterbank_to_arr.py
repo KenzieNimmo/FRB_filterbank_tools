@@ -28,7 +28,7 @@ def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=
         arr=bp(filename,maskfile,nbins,offpulse,smooth_val=smooth_val)
     return arr
 
-def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, nbins=6,AO=False):
+def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, smooth_val=None,AO=False):
     fits=psrfits.PsrfitsFile(filename)
     total_N=fits.specinfo.N
     t_samp=fits.specinfo.dt
@@ -53,7 +53,7 @@ def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, 
         arr = np.ma.masked_where(mask==True,arr)
     arr=np.flip(arr,0)
     if bandpass==True and offpulse!=None:
-        arr=bp(filename,maskfile,nbins,offpulse)
+        arr=bp(filename,maskfile,nbins,offpulse,smooth_val=smooth_val)
     return arr
 
 def smooth(x,window_len=11,window='hanning'):
