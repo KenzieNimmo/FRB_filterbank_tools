@@ -45,8 +45,8 @@ class offpulse(object):
         if filename.endswith(".fil"):
             fil=filterbank.filterbank(filename)
             arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None,bandpass=False)
-        
- 
+
+
         if filename.endswith(".fits"):
             fits=psrfits.PsrfitsFile(filename)
             arr = filterbank_to_arr.fits_to_np(filename,dm=dm,maskfile=None,bandpass=False,offpulse=None, nbins=6,AO=AO)
@@ -126,7 +126,7 @@ class RFI(object):
         self.canvas = ds.figure.canvas
         self.ithres = ithres
 
-        
+
         if filename.endswith(".fil"):
             fil=filterbank.filterbank(filename)
             arr = filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None,bandpass=False)
@@ -153,7 +153,7 @@ class RFI(object):
         self.cmap.set_over(color='pink')
         self.cmap.set_bad(color='red')
         self.ax1.set_xlim(0,self.total_N)
-        
+
         self.ax3plot, = self.ax3.plot(spectrum, self.freqbins, 'k-',zorder=2)
         self.ax3.tick_params(axis='x', which='both', top='off', bottom='off', labelbottom='off')
         self.ax3.tick_params(axis='y', labelleft='off')
@@ -182,7 +182,7 @@ class RFI(object):
             self.ax1plot.set_clim(vmin=np.amin(arr),vmax=threshold)
             self.cmap.set_over(color='pink')
             plt.draw()
-            
+
 
     def onKeyRelease(self, event):
         if event.key == 'x':
@@ -253,7 +253,7 @@ class RFI(object):
                 else:
                     for i in range(len(np.arange(self.begin_chan[-1],index2+1,1))):
                         self.mask_chan.append(np.arange(self.begin_chan[-1],index2+1,1)[i])
-                
+
                 self.final_spec = np.mean(arr,axis=1)
 
 if __name__ == '__main__':
@@ -261,11 +261,13 @@ if __name__ == '__main__':
                 description="Interactive RFI zapper")
     parser.add_option('-d', '--dm', dest='dm', type='float', \
                       help="Dispersion measure.", default=0)
-    
+
     parser.add_option('-b', '--bandpass', dest='bandpass', action="store_true", \
                       help="If -b option is used,bandpass correction is applied (otherwise no bandpass correction: only masking).", default=False)
     parser.add_option('--AO', dest='AO', action="store_true", \
                       help="Give --AO option if this data is part of the FRB 121102 monitoring program. ", default=False)
+    parser.add_option('--smooth', dest='bandpass', action="int", \
+                      help="If --smooth option is used,smoothing to the bandpass before bandpass correction is applied (otherwise no smoothing).", default=0)
     (options, args) = parser.parse_args()
     print(args)
     if len(args)==0:
@@ -276,9 +278,9 @@ if __name__ == '__main__':
     else:
         options.infile = args[-1]
 
-    
 
-    
+
+
     dm=options.dm
     filename = options.infile
 
@@ -334,11 +336,11 @@ if __name__ == '__main__':
     else:
         off_pulse=np.append(np.arange(0,end_times[-1],1),np.arange(begin_times[-1],total_N,1))
 
-    
+
     numchan = np.zeros_like(RFImask.mask_chan)
     numchan+=tot_freq
     mask_chans = np.abs(numchan-np.array(RFImask.mask_chan)-1)
-    
+
     offpulsefile = '%s_offpulse_time.pkl'%picklename
     with open(offpulsefile, 'wb') as foff:
         pickle.dump(off_pulse, foff)
@@ -349,21 +351,24 @@ if __name__ == '__main__':
 
 
     burst = {}
-
+    if options.smooth == 0:
+        smooth_val = None
+    else:
+        smooth_val = options.smooth
     if filename.endswith(".fil"):
         if options.bandpass ==True:
-            burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, nbins=6) #zapped and bp corrected array
+            burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, smooth_val=smooth_val) #zapped and bp corrected array
         else:
-            burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6)#zapped array
+            burst['array_corrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, smooth_val=smooth_val)#zapped array
         burst['array_uncorrected']=filterbank_to_arr.filterbank_to_np(filename,dm=dm,maskfile=None)
-        burst['undedisp_array']=filterbank_to_arr.filterbank_to_np(filename,dm=0, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6) #undedisp and masked
+        burst['undedisp_array']=filterbank_to_arr.filterbank_to_np(filename,dm=0, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, smooth_val=smooth_val) #undedisp and masked
     if filename.endswith(".fits"):
         if options.bandpass ==True:
-            burst['array_corrected']=filterbank_to_arr.fits_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, nbins=6,AO=options.AO) #zapped and bp corrected array
+            burst['array_corrected']=filterbank_to_arr.fits_to_np(filename,dm=dm, maskfile=maskfile, bandpass=True, offpulse=offpulsefile, smooth_val=smooth_val,AO=options.AO) #zapped and bp corrected array
         else:
-            burst['array_corrected']=filterbank_to_arr.fits_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6,AO=options.AO) #zapped array 
-        burst['array_uncorrected']=filterbank_to_arr.fits_to_np(filename,dm=dm,maskfile=None,bandpass=False,offpulse=None,nbins=6,AO=options.AO)
-        burst['undedisp_array']=filterbank_to_arr.fits_to_np(filename,dm=0, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, nbins=6,AO=False)
+            burst['array_corrected']=filterbank_to_arr.fits_to_np(filename,dm=dm, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, smooth_val=smooth_val,AO=options.AO) #zapped array
+        burst['array_uncorrected']=filterbank_to_arr.fits_to_np(filename,dm=dm,maskfile=None,bandpass=False,offpulse=None,smooth_val=smooth_val,AO=options.AO)
+        burst['undedisp_array']=filterbank_to_arr.fits_to_np(filename,dm=0, maskfile=maskfile, bandpass=False, offpulse=offpulsefile, smooth_val=smooth_val,AO=False)
 
 
     burst['mask']=mask_chans
@@ -374,6 +379,3 @@ if __name__ == '__main__':
 
     with open('%s.pkl'%picklename, 'wb') as f:
         pickle.dump(burst, f)
-
-
-    
