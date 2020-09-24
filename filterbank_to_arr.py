@@ -13,7 +13,7 @@ def filterbank_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=
     total_N = fil.number_of_samples
     spec=fil.get_spectra(0,total_N)
     if dm!=None:
-        spec.dedisperse(dm, padval='mean')
+        spec.dedisperse(dm, padval='mean',trim=True)
     arr = np.array([spec[i] for i in xrange(fil.header['nchans'])])
     t_samp = fil.header['tsamp']
     if maskfile!=None:
@@ -41,7 +41,7 @@ def fits_to_np(filename, dm=None, maskfile=None, bandpass=False, offpulse=None, 
         spec=fits.get_spectra(begin_bin,end_bin)
     else: spec=fits.get_spectra(0,total_N)
     if dm!=None:
-        spec.dedisperse(dm, padval='mean')
+        spec.dedisperse(dm, padval='mean',trim=True)
     arr = np.array([spec[i] for i in xrange(fits.specinfo.num_channels)])
 
     if maskfile!=None:
